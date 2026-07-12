@@ -1,0 +1,8 @@
+bin/
+obj/
+*.zip
+
+# Ripped straight from the actual game via AssetRipper -- Another Axiom LLC's copyrighted
+# mesh data, not this project's own work. Keep locally for the 3D preview; never redistribute.
+# See README.md for how to regenerate these yourself from your own game install.
+Resources/Mesh/*.asset

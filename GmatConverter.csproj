@@ -18,4 +18,16 @@
     <PackageReference Include="AssetsTools.NET.Texture" Version="3.0.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Wildcard on purpose: these three .asset files are ripped straight from the actual
+         game (see Resources/Mesh/README.md) and are gitignored, not shipped in the repo. A
+         fresh clone simply has none of them yet, and the glob then embeds nothing instead of
+         failing the build; GorillaModel/Gorilla3DPreviewPanel degrade gracefully in that case. -->
+    <EmbeddedResource Include="Resources\Mesh\*.asset">
+      <LogicalName>GmatConverter.Mesh.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Mesh\gorillachestface.png">
+      <LogicalName>GmatConverter.Mesh.gorillachestface.png</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
 </Project>

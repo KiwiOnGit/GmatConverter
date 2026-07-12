@@ -46,6 +46,7 @@ namespace GmatConverter
                 ["tiling"] = new JArray(mat.TilingX, mat.TilingY),
                 ["offset"] = new JArray(mat.OffsetX, mat.OffsetY),
                 ["texture"] = "albedo.png",
+                ["shader"] = mat.ShaderName,
                 ["animation"] = new JObject
                 {
                     ["type"] = mat.Animation,
@@ -54,6 +55,8 @@ namespace GmatConverter
                     ["speed"] = mat.AnimSpeed
                 }
             };
+            if (mat.TaggedTexture != null)
+                m["taggedTexture"] = "tagged.png";
             WriteText(zip, "material.json", m.ToString(Formatting.Indented));
 
             if (mat.Texture != null)
@@ -61,6 +64,12 @@ namespace GmatConverter
                 var entry = zip.CreateEntry("albedo.png", CompressionLevel.Optimal);
                 using var es = entry.Open();
                 mat.Texture.Save(es, ImageFormat.Png);
+            }
+            if (mat.TaggedTexture != null)
+            {
+                var entry = zip.CreateEntry("tagged.png", CompressionLevel.Optimal);
+                using var es = entry.Open();
+                mat.TaggedTexture.Save(es, ImageFormat.Png);
             }
         }
 

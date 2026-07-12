@@ -78,18 +78,32 @@ namespace GmatConverter
             {
                 var props = matField["m_SavedProperties"];
 
-                // Colors
+                // Colors. Prefer the conventional tint names; if the shader doesn't use them
+                // (Shader Forge and other hand-rolled shaders invent their own names), fall
+                // back to the first plausible tint rather than silently defaulting to white --
+                // a defaulted-white tint over a texture that failed to bind elsewhere is the
+                // classic "conversion looks white in-game" symptom.
                 var colors = props["m_Colors"]["Array"];
+                AssetTypeValueField tintField = null;
                 foreach (var c in colors)
+                    if (PropName(c) is "_Color" or "_BaseColor") { tintField = c; break; }
+                if (tintField == null)
                 {
-                    string key = PropName(c);
-                    if (key == "_Color" || key == "_BaseColor")
+                    foreach (var c in colors)
                     {
-                        var col = c["second"];
-                        result.ColorR = col["r"].AsFloat;
-                        result.ColorG = col["g"].AsFloat;
-                        result.ColorB = col["b"].AsFloat;
+                        string lk = PropName(c).ToLowerInvariant();
+                        if (lk.Contains("emission") || lk.Contains("outline") || lk.Contains("specular") ||
+                            lk.Contains("rim") || lk.Contains("hsv") || lk.Contains("stencil")) continue;
+                        tintField = c;
+                        break;
                     }
+                }
+                if (tintField != null)
+                {
+                    var col = tintField["second"];
+                    result.ColorR = col["r"].AsFloat;
+                    result.ColorG = col["g"].AsFloat;
+                    result.ColorB = col["b"].AsFloat;
                 }
 
                 // Texture envs (texture ref + tiling/offset)
@@ -124,8 +138,33 @@ namespace GmatConverter
                     result.OffsetY = chosen["second"]["m_Offset"]["y"].AsFloat;
                 }
 
+                // Shader family hint: a coarse, honest diagnostic (never a guessed exact shader
+                // name -- resolving the real name would mean loading the referenced external
+                // asset file, which usually isn't available offline). If the bundle depends on
+                // Unity's built-in shader library, the source material almost certainly used
+                // Standard/Legacy -- the shader family the Gorilla Tag engine upgrade broke,
+                // and the most common reason a property ends up missing here.
+                bool usesBuiltinShaderLib = false;
+                foreach (var ext in afile.Metadata.Externals)
+                {
+                    string p = ext.PathName ?? "";
+                    if (p.IndexOf("unity_builtin_extra", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        p.IndexOf("unity default resources", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        usesBuiltinShaderLib = true;
+                        break;
+                    }
+                }
+                result.ShaderHint = usesBuiltinShaderLib
+                    ? "Legacy Built-in shader (Standard/Legacy family)"
+                    : "Custom/bundled shader";
+
                 if (Environment.GetEnvironmentVariable("GMAT_DUMP") == "1")
                 {
+                    Console.Error.WriteLine("-- SHADER --");
+                    Console.Error.WriteLine($"   hint={result.ShaderHint}");
+                    for (int i = 0; i < afile.Metadata.Externals.Count; i++)
+                        Console.Error.WriteLine($"   external[{i + 1}] = {afile.Metadata.Externals[i].PathName} guid={afile.Metadata.Externals[i].Guid}");
                     Console.Error.WriteLine("-- COLORS --");
                     foreach (var c in props["m_Colors"]["Array"])
                         Console.Error.WriteLine($"   {PropName(c)} = {c["second"]["r"].AsFloat},{c["second"]["g"].AsFloat},{c["second"]["b"].AsFloat},{c["second"]["a"].AsFloat}");
