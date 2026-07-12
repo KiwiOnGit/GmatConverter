@@ -7,10 +7,7 @@ using Newtonsoft.Json.Linq;
 
 namespace GmatConverter
 {
-    // Writes the "simple" .gmatplus format: a zip of { package.json, material.json, albedo.png }.
-    // The presence of material.json is what the mod uses to tell this apart from a normal
-    // AssetBundle-based .gmatplus. Because it's a plain PNG + JSON, the mod can build the
-    // material directly on the game's live shader with zero Unity-version/AssetBundle risk.
+    
     public static class GmatWriter
     {
         public static void Write(SimpleMaterial mat, string outPath)
@@ -18,7 +15,6 @@ namespace GmatConverter
             if (File.Exists(outPath)) File.Delete(outPath);
             using var zip = ZipFile.Open(outPath, ZipArchiveMode.Create);
 
-            // package.json -- same schema the mod already reads, so it lists in the picker.
             var pkg = new JObject
             {
                 ["androidFileName"] = "",
@@ -37,7 +33,6 @@ namespace GmatConverter
             };
             WriteText(zip, "package.json", pkg.ToString(Formatting.Indented));
 
-            // material.json -- the simple-format payload.
             var m = new JObject
             {
                 ["format"] = "simple",

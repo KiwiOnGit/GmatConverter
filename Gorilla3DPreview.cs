@@ -9,9 +9,7 @@ using System.Windows.Forms;
 
 namespace GmatConverter
 {
-    // Loads and caches the three ripped gorilla mesh assets (body, face, chest/belly) bundled
-    // as embedded resources, plus the shared legacy face/chest texture used to render the
-    // parts of the model this tool doesn't edit.
+    
     public static class GorillaModel
     {
         private static SimpleMesh body, face, chest;
@@ -34,8 +32,6 @@ namespace GmatConverter
             }
         }
 
-        // Null when the local, gitignored Resources/Mesh/*.asset files aren't present (e.g. a
-        // fresh clone that hasn't supplied its own ripped meshes yet -- see README.md).
         private static SimpleMesh Load(string resourceName)
         {
             using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName);
@@ -45,9 +41,6 @@ namespace GmatConverter
         }
     }
 
-    // A tiny software rasterizer: perspective projection, a Z-buffer, perspective-correct
-    // texture sampling and simple headlight Gouraud shading. No GPU/3D-API dependency, so the
-    // converter stays a single self-contained exe with no extra runtime requirement.
     public static class SoftwareRasterizer
     {
         private static readonly Vector3 LightDir = Vector3.Normalize(new Vector3(0.35f, 0.55f, -1f));
@@ -77,12 +70,6 @@ namespace GmatConverter
                 float sx1 = width / 2f + v1.X * focal / z1, sy1 = height / 2f - v1.Y * focal / z1;
                 float sx2 = width / 2f + v2.X * focal / z2, sy2 = height / 2f - v2.Y * focal / z2;
 
-                // No backface culling: the ripped mesh's submeshes don't all share one
-                // consistent winding order, so a single cull-sign convention was showing the
-                // inside of some parts and the outside of others. The barycentric weights
-                // below are self-consistent for either winding, and the Z-buffer alone
-                // correctly resolves which surface is actually closest to the camera -- for a
-                // closed mesh that's always the true outer surface, regardless of winding.
                 float area = (sx1 - sx0) * (sy2 - sy0) - (sx2 - sx0) * (sy1 - sy0);
                 if (Math.Abs(area) < 0.0001f) continue;
 
@@ -151,13 +138,9 @@ namespace GmatConverter
 
         private static float Shade(Vector3 normal)
         {
-            // Abs(), not Max(0, .)): now that backfaces are rasterized too (no culling), a
-            // triangle whose normal points away from the light should still shade like a solid
-            // surface would from that side, not go dark -- otherwise any spot where a backface
-            // wins the depth test (open/non-manifold edges in the ripped mesh) reads as a hole.
+            
             float d = Vector3.Dot(Vector3.Normalize(normal), LightDir);
-            // Generous ambient floor -- this is a shape/color preview, not a lighting demo, so
-            // it should never read as "solid black" no matter which way it's rotated.
+            
             return 0.45f + 0.55f * Math.Abs(d);
         }
 
@@ -169,7 +152,6 @@ namespace GmatConverter
 
         private static int Clamp255(float v) => Math.Max(0, Math.Min(255, (int)(v * 255f)));
 
-        // Small cache so we don't re-lock the same Bitmap's bits every triangle/frame.
         private static Bitmap cachedBmp;
         private static int[] cachedPixels;
         private static int cachedW, cachedH;
@@ -191,7 +173,6 @@ namespace GmatConverter
         }
     }
 
-    // Rotatable 3D preview: drag with the left mouse button to orbit, wheel to zoom.
     public class Gorilla3DPreviewPanel : Panel
     {
         private readonly MainForm owner;
@@ -240,18 +221,9 @@ namespace GmatConverter
         }
     }
 
-    // Renders one frame of the gorilla body + face + chest to an offscreen bitmap. Shared by
-    // the interactive preview panel and the headless `--renderpreview` CLI check, so what gets
-    // eyeballed in a screenshot is exactly the code path the GUI actually uses.
     public static class GorillaPreviewRenderer
     {
-        // The ripped body mesh (a skinned mesh, bind-pose-local) was authored at a far smaller
-        // scale than the static face/chest meshes -- its own declared submesh AABBs confirm
-        // this isn't a parsing bug, the raw data really is this small; in the actual game a
-        // Transform scale (not present in a bare Mesh asset) brings it up to size. Empirically
-        // derived so the body's bounding box lands in the same rough units as face/chest: the
-        // body's largest raw extent (~0.0154) times this constant is ~1.4, matching the scale
-        // face/chest already sit at.
+        
         public const float BodyScale = 91f;
 
         public static Bitmap Render(Bitmap bodyTex, Vector2 uvScale, Vector2 uvOffset, Color tint,
@@ -264,9 +236,6 @@ namespace GmatConverter
             int bgColor = unchecked((int)0xFF121214);
             for (int i = 0; i < framebuffer.Length; i++) framebuffer[i] = bgColor;
 
-            // The ripped mesh's own local axes don't have Y as "up" (its tallest extent is on
-            // Z) -- this fixed correction is applied before the user's orbit so the model
-            // starts right-side-up instead of lying on its side.
             var baseCorrection = Matrix4x4.CreateRotationX(-MathF.PI / 2f);
             var rotation = baseCorrection * (Matrix4x4.CreateRotationX(pitch) * Matrix4x4.CreateRotationY(yaw));
             SimpleMesh bodyMesh = GorillaModel.Body;
@@ -275,12 +244,6 @@ namespace GmatConverter
                 Vector3 center = BoundsCenter(bodyMesh, BodyScale);
                 SoftwareRasterizer.RenderMesh(bodyMesh, bodyTex, tint, uvScale, uvOffset, rotation, center, distance, BodyScale, framebuffer, depth, w, h);
             }
-
-            // The separate face-plate/chest-badge meshes live in a different, unrelated local
-            // origin (no ripped scene/prefab transform survives in a bare Mesh asset to place
-            // them correctly), so they're not composited into the 3D view -- the face & chest
-            // texture is shown as a fixed 2D reference swatch next to the 3D view instead,
-            // rather than risk a visibly-misplaced floating decal.
 
             var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);
             var rect = new Rectangle(0, 0, w, h);

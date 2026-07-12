@@ -13,7 +13,6 @@ namespace GmatConverter
         SimpleMaterial mat;
         string loadedPath;
 
-        // Left-column editors
         TextBox nameBox, authorBox, descBox, tileXBox, tileYBox, offXBox, offYBox, colsBox, rowsBox, speedBox;
         CheckBox customColorsBox, previewTaggedBox;
         Button colorButton;
@@ -21,7 +20,6 @@ namespace GmatConverter
         ComboBox animBox, shaderBox;
         Label texInfoLabel, taggedInfoLabel;
 
-        // Right preview
         PreviewPanel preview;
         Gorilla3DPreviewPanel preview3D;
         System.Windows.Forms.Timer timer;
@@ -156,9 +154,6 @@ namespace GmatConverter
             tabSwatch.Controls.Add(preview);
             tab3D.Controls.Add(preview3D);
 
-            // Reference swatch: the face plate + chest badge are a separate mesh this tool
-            // doesn't place in the 3D view (no ripped scene transform to position them
-            // correctly), so show what they actually look like as a fixed thumbnail instead.
             var faceChestBox = new PictureBox
             {
                 Image = GorillaModel.FaceChestTexture,
@@ -190,8 +185,6 @@ namespace GmatConverter
             tabs.TabPages.Add(tabSwatch);
             split.Panel2.Controls.Add(tabs);
 
-            // Keep the left column scrolled to the top -- otherwise the first control to take
-            // focus during layout can drag the AutoScroll view down past "Name"/"Author".
             nameBox.Focus();
             split.Panel1.AutoScrollPosition = new Point(0, 0);
         }
@@ -205,9 +198,6 @@ namespace GmatConverter
             if (ofd.ShowDialog() == DialogResult.OK) LoadFile(ofd.FileName);
         }
 
-        // Starts a brand-new custom skin from scratch: import a PNG, optionally a separate
-        // tagged-state PNG, pick a shader, tweak tint/tiling/animation, then export straight to
-        // .gmatplus -- no .gmat/AssetBundle involved at all.
         void NewSkin(bool silent)
         {
             mat = new SimpleMaterial { Name = "My Skin" };
@@ -241,7 +231,7 @@ namespace GmatConverter
             try
             {
                 var bmp = new Bitmap(ofd.FileName);
-                // Force 32bpp ARGB so the rasterizer/GDI+ tinting code can rely on the format.
+                
                 var converted = new Bitmap(bmp.Width, bmp.Height, PixelFormat.Format32bppArgb);
                 using (var g = Graphics.FromImage(converted)) g.DrawImageUnscaled(bmp, 0, 0);
                 bmp.Dispose();
@@ -376,10 +366,6 @@ namespace GmatConverter
         static float ParseF(string s, float d) => float.TryParse(s, out var v) ? v : d;
         static int ParseI(string s, int d) => int.TryParse(s, out var v) ? v : d;
 
-        // Shared by both the flat swatch preview and the 3D model preview: which texture is
-        // currently "equipped" (tagged or not), and the UV scale/offset + tint for the current
-        // animation frame. Mirrors exactly what SimpleMaterialLoader/CosmeticAnimator do
-        // in-game (mainTextureScale/Offset + Material.color), so the preview matches reality.
         public (Bitmap texture, Vector2 scale, Vector2 offset, Color tint) GetPreviewFrame()
         {
             if (mat == null) return (null, Vector2.One, Vector2.Zero, Color.White);
@@ -410,7 +396,6 @@ namespace GmatConverter
             return (tex, new Vector2(mat.TilingX, mat.TilingY), new Vector2(mat.OffsetX, mat.OffsetY), tint);
         }
 
-        // Draws the current material state into the flat swatch preview panel.
         public void DrawPreview(Graphics g, Rectangle bounds)
         {
             g.Clear(Color.FromArgb(18, 18, 20));
@@ -496,7 +481,6 @@ namespace GmatConverter
         }
     }
 
-    // Simple double-buffered panel that delegates painting to the form.
     public class PreviewPanel : Panel
     {
         readonly MainForm owner;

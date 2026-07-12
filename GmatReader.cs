@@ -14,9 +14,7 @@ using Newtonsoft.Json.Linq;
 
 namespace GmatConverter
 {
-    // Reads an old .gmat (zip: package.json + Unity AssetBundle), pulls out the material's
-    // texture, tint, tiling and any animation hint, entirely in managed code (AssetsTools.NET
-    // + its texture decoder) -- no Unity Editor, no external tools.
+    
     public static class GmatReader
     {
         public static SimpleMaterial Read(string gmatPath)
@@ -43,7 +41,7 @@ namespace GmatConverter
                 ZipArchiveEntry bundleEntry = null;
                 if (!string.IsNullOrEmpty(bundleEntryName))
                     bundleEntry = zip.Entries.FirstOrDefault(e => e.Name == bundleEntryName);
-                // Fall back to the first non-json entry.
+                
                 bundleEntry ??= zip.Entries.FirstOrDefault(e => e.Name != "package.json");
                 if (bundleEntry == null)
                     throw new Exception("No AssetBundle found inside the .gmat package.");
@@ -61,11 +59,10 @@ namespace GmatConverter
         {
             var manager = new AssetsManager();
             var bunInst = manager.LoadBundleFile(new MemoryStream(bundleBytes), "bundle");
-            // Decompress if needed (LZ4/LZMA) so the assets file can be read.
+            
             var afileInst = manager.LoadAssetsFileFromBundle(bunInst, 0, false);
             var afile = afileInst.file;
 
-            // --- Material ---
             AssetTypeValueField matField = null;
             foreach (var info in afile.GetAssetsOfType(AssetClassID.Material))
             {
@@ -78,11 +75,6 @@ namespace GmatConverter
             {
                 var props = matField["m_SavedProperties"];
 
-                // Colors. Prefer the conventional tint names; if the shader doesn't use them
-                // (Shader Forge and other hand-rolled shaders invent their own names), fall
-                // back to the first plausible tint rather than silently defaulting to white --
-                // a defaulted-white tint over a texture that failed to bind elsewhere is the
-                // classic "conversion looks white in-game" symptom.
                 var colors = props["m_Colors"]["Array"];
                 AssetTypeValueField tintField = null;
                 foreach (var c in colors)
@@ -106,7 +98,6 @@ namespace GmatConverter
                     result.ColorB = col["b"].AsFloat;
                 }
 
-                // Texture envs (texture ref + tiling/offset)
                 var texEnvs = props["m_TexEnvs"]["Array"];
                 var texByName = new Dictionary<string, AssetTypeValueField>();
                 foreach (var te in texEnvs)
@@ -119,7 +110,7 @@ namespace GmatConverter
                     else chosen = null;
                 if (chosen == null)
                 {
-                    // First bound texture that isn't a normal/mask/etc map.
+                    
                     foreach (var kv in texByName)
                     {
                         string lk = kv.Key.ToLowerInvariant();
@@ -138,12 +129,6 @@ namespace GmatConverter
                     result.OffsetY = chosen["second"]["m_Offset"]["y"].AsFloat;
                 }
 
-                // Shader family hint: a coarse, honest diagnostic (never a guessed exact shader
-                // name -- resolving the real name would mean loading the referenced external
-                // asset file, which usually isn't available offline). If the bundle depends on
-                // Unity's built-in shader library, the source material almost certainly used
-                // Standard/Legacy -- the shader family the Gorilla Tag engine upgrade broke,
-                // and the most common reason a property ends up missing here.
                 bool usesBuiltinShaderLib = false;
                 foreach (var ext in afile.Metadata.Externals)
                 {
@@ -179,7 +164,6 @@ namespace GmatConverter
                 DetectAnimation(props, result);
             }
 
-            // --- Texture ---
             AssetTypeValueField texField = null;
             if (mainTexPathId != 0)
             {
@@ -200,8 +184,6 @@ namespace GmatConverter
             RefineFlipbook(result);
         }
 
-        // Property key in a SavedProperties pair; layout differs slightly across versions
-        // (a plain string, or a struct with a "name" field).
         static string PropName(AssetTypeValueField pair)
         {
             var first = pair["first"];
@@ -220,8 +202,7 @@ namespace GmatConverter
                     if (PropName(f) == n) return f["second"].AsFloat;
                 return 0f;
             }
-            // Vector props live in m_Colors for shaders that pack them there, or a separate
-            // block; check both color-typed vectors and floats.
+            
             if (floatNames.Contains("_Grid") && floatNames.Contains("_Density"))
             {
                 result.Animation = "scroll";
@@ -234,11 +215,7 @@ namespace GmatConverter
             }
             else
             {
-                // A flipbook/scroll sprite-sheet shader. _XColsYRowsZSpeed nominally packs
-                // (cols, rows, speed), but Shader-Forge variants (e.g. birds2chainz) stuff
-                // scroll parameters in there instead, so the raw numbers can't be trusted as a
-                // literal grid. Just flag it here; RefineFlipbook() derives the real grid from
-                // the decoded texture's aspect ratio after it's loaded.
+                
                 foreach (var c in props["m_Colors"]["Array"])
                 {
                     if (PropName(c) == "_XColsYRowsZSpeed")
@@ -251,9 +228,6 @@ namespace GmatConverter
             }
         }
 
-        // A sprite-sheet is stored as one tall (or wide) strip; the frame grid is whatever
-        // makes each frame roughly square. Trust an explicit small grid only if it actually
-        // matches the texture; otherwise infer from the aspect ratio.
         static void RefineFlipbook(SimpleMaterial result)
         {
             if (result.Animation != "flipbook" || result.Texture == null)
@@ -274,7 +248,7 @@ namespace GmatConverter
             }
             else
             {
-                // Near-square sheet: assume a square grid of frames.
+                
                 int n = Math.Max(2, (int)Math.Round(Math.Sqrt(Math.Max(2, (w * h) / (128 * 128)))));
                 cols = n; rows = n;
             }
@@ -285,8 +259,7 @@ namespace GmatConverter
         static Bitmap DecodeTexture(AssetTypeValueField texField, AssetsFileInstance afileInst)
         {
             var texFile = TextureFile.ReadTextureFile(texField);
-            // FillPictureData pulls the encoded bytes (including from a resS stream if the
-            // bundle stored them separately); DecodeTextureRaw turns them into BGRA32.
+            
             byte[] raw = texFile.FillPictureData(afileInst);
             byte[] bgra = texFile.DecodeTextureRaw(raw, true);
             int w = texFile.m_Width, h = texFile.m_Height;
@@ -295,7 +268,7 @@ namespace GmatConverter
             var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);
             var rect = new Rectangle(0, 0, w, h);
             var data = bmp.LockBits(rect, ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
-            // Unity texture data is bottom-up; flip rows into the top-down Bitmap.
+            
             int stride = w * 4;
             byte[] flipped = new byte[bgra.Length];
             for (int y = 0; y < h; y++)

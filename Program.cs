@@ -8,9 +8,7 @@ namespace GmatConverter
         [STAThread]
         static int Main(string[] args)
         {
-            // Headless test/CLI mode: `GmatConverter --extract <file.gmat>` prints what it
-            // parsed and (optionally) writes a .gmatplus next to it. Used for verification;
-            // double-clicking the exe launches the GUI.
+            
             if (args.Length >= 2 && args[0] == "--extract")
             {
                 try
@@ -37,9 +35,6 @@ namespace GmatConverter
                 }
             }
 
-            // Headless sanity check for the bundled gorilla preview meshes: `GmatConverter
-            // --testmesh` parses all three embedded .asset files and reports vertex/triangle
-            // counts, so a bad parse fails fast without opening the GUI.
             if (args.Length >= 1 && args[0] == "--testmesh")
             {
                 try
@@ -74,11 +69,6 @@ namespace GmatConverter
                 }
             }
 
-            // Headless render check: `GmatConverter --renderpreview <out.png> [file.gmat]`
-            // renders one frame of the 3D preview (optionally with a real material loaded) to
-            // a PNG using the exact same GorillaPreviewRenderer the GUI's preview panel calls,
-            // with no window/screen capture involved -- lets the render be eyeballed from a
-            // file instead of a live screenshot.
             if (args.Length >= 2 && args[0] == "--renderpreview")
             {
                 try

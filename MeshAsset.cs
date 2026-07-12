@@ -5,8 +5,7 @@ using System.Numerics;
 
 namespace GmatConverter
 {
-    // A minimal triangle mesh: positions/normals/uvs indexed in parallel, plus a flat
-    // triangle-list index buffer (3 indices per triangle).
+    
     public class SimpleMesh
     {
         public Vector3[] Positions;
@@ -15,16 +14,6 @@ namespace GmatConverter
         public int[] Indices;
     }
 
-    // Parses the handful of fields this project needs out of a Unity-native "as project"
-    // exported Mesh .asset (AssetRipper YAML). Not a general YAML parser -- these files have a
-    // very regular, predictable structure, so simple line scanning is enough and avoids
-    // pulling in a YAML dependency for three small bundled files.
-    //
-    // Vertex data layout: Unity packs the mesh's channels (a fixed 14-slot order -- Position,
-    // Normal, Tangent, Color, TexCoord0..7, BlendWeight, BlendIndices) across one or more
-    // interleaved streams. Each channel says which stream it lives in, its byte offset within
-    // that stream's per-vertex stride, its component format and dimension. Streams are packed
-    // back-to-back in _typelessdata, each one's start padded up to a 16-byte boundary.
     public static class UnityMeshAsset
     {
         private struct Channel
@@ -85,7 +74,6 @@ namespace GmatConverter
             byte[] data = HexToBytes(typelessHex);
             byte[] indexBytes = HexToBytes(indexHex ?? "");
 
-            // Fixed Unity channel order: 0=Position 1=Normal 2=Tangent 3=Color 4=TexCoord0 ...
             Channel posCh = channels[0];
             Channel normCh = channels[1];
             Channel uvCh = channels[4];
@@ -152,21 +140,20 @@ namespace GmatConverter
             return int.Parse(line.Substring(idx + key.Length).Trim(), CultureInfo.InvariantCulture);
         }
 
-        // Unity VertexAttributeFormat component byte sizes (only the ones these meshes use).
         private static int FormatSize(int format) => format switch
         {
-            0 => 4, // Float32
-            1 => 2, // Float16
-            2 => 1, // UNorm8
-            3 => 1, // SNorm8
-            4 => 2, // UNorm16
-            5 => 2, // SNorm16
-            6 => 1, // UInt8
-            7 => 1, // SInt8
-            8 => 2, // UInt16
-            9 => 2, // SInt16
-            10 => 4, // UInt32
-            11 => 4, // SInt32
+            0 => 4, 
+            1 => 2, 
+            2 => 1, 
+            3 => 1, 
+            4 => 2, 
+            5 => 2, 
+            6 => 1, 
+            7 => 1, 
+            8 => 2, 
+            9 => 2, 
+            10 => 4, 
+            11 => 4, 
             _ => 4
         };
 
