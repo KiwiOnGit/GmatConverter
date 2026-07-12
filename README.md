@@ -87,3 +87,9 @@ instead of a model. Keep whatever you export for personal use only; don't redist
   out of AssetRipper's "as Unity project" YAML export (interleaved vertex streams, decoded by
   hand) and rendered with a small built-in software rasterizer -- no OpenGL/DirectX/WebView
   dependency, keeping the tool a single portable exe.
+
+## Disclaimer
+
+This product is not affiliated with Another Axiom Inc. or its videogames Gorilla Tag and
+Orion Drift and is not endorsed or otherwise sponsored by Another Axiom. Portions of the
+materials contained herein are property of Another Axiom. ©2021 Another Axiom Inc
