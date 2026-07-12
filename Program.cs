@@ -92,8 +92,10 @@ namespace GmatConverter
                         tint = System.Drawing.Color.FromArgb(
                             (int)(mat.ColorR * 255), (int)(mat.ColorG * 255), (int)(mat.ColorB * 255));
                     }
+                    float yaw = args.Length >= 4 ? float.Parse(args[3]) : 0.5f;
+                    float pitch = args.Length >= 5 ? float.Parse(args[4]) : -0.15f;
                     using var bmp = GorillaPreviewRenderer.Render(tex, System.Numerics.Vector2.One, System.Numerics.Vector2.Zero,
-                        tint, yaw: 0.5f, pitch: -0.15f, distance: 2.6f, w: 500, h: 500);
+                        tint, yaw, pitch, distance: 2.6f, w: 500, h: 500);
                     bmp.Save(args[1], System.Drawing.Imaging.ImageFormat.Png);
                     Console.WriteLine($"Wrote {args[1]}");
                     return 0;

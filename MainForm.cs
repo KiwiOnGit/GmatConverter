@@ -69,10 +69,10 @@ namespace GmatConverter
             split.Panel1.Padding = new Padding(10);
 
             int y = 6;
-            void Row(string label, Control c, int h = 24)
+            void Row(string label, Control c, int h = 24, int w = 250)
             {
                 var l = new Label { Text = label, Left = 6, Top = y + 3, Width = 110, ForeColor = Color.Silver };
-                c.Left = 122; c.Top = y; c.Width = 250; c.Height = h;
+                c.Left = 122; c.Top = y; c.Width = w; c.Height = h;
                 split.Panel1.Controls.Add(l);
                 split.Panel1.Controls.Add(c);
                 y += h + 8;
@@ -88,12 +88,12 @@ namespace GmatConverter
 
             var importTaggedBtn = Btn("Import PNG...", 120);
             importTaggedBtn.Click += (s, e) => ImportTexture(tagged: true);
-            var clearTaggedBtn = Btn("Clear", 60);
-            clearTaggedBtn.Left = importTaggedBtn.Left + 126;
-            clearTaggedBtn.Click += (s, e) => { if (mat != null) { mat.TaggedTexture = null; UpdateTexLabels(); } };
-            Row("Tagged texture", importTaggedBtn);
-            split.Panel1.Controls.Add(clearTaggedBtn);
+            Row("Tagged texture", importTaggedBtn, w: 150);
+            var clearTaggedBtn = Btn("Clear", 70);
+            clearTaggedBtn.Left = importTaggedBtn.Left + importTaggedBtn.Width + 6;
             clearTaggedBtn.Top = importTaggedBtn.Top;
+            clearTaggedBtn.Click += (s, e) => { if (mat != null) { mat.TaggedTexture = null; UpdateTexLabels(); } };
+            split.Panel1.Controls.Add(clearTaggedBtn);
 
             taggedInfoLabel = new Label { Text = "No tagged variant (uses main texture while tagged)", ForeColor = Color.Gray, AutoSize = true };
             Row("", taggedInfoLabel);
@@ -120,10 +120,16 @@ namespace GmatConverter
 
             colorButton = Btn("Pick color", 100);
             colorButton.Click += (s, e) => PickColor();
-            colorSwatch = new Panel { Left = 232, Top = 0, Width = 40, Height = 24, BorderStyle = BorderStyle.FixedSingle };
-            Row("Tint", colorButton);
+            Row("Tint", colorButton, w: 100);
+            colorSwatch = new Panel
+            {
+                Left = colorButton.Left + colorButton.Width + 6,
+                Top = colorButton.Top,
+                Width = 40,
+                Height = 24,
+                BorderStyle = BorderStyle.FixedSingle
+            };
             split.Panel1.Controls.Add(colorSwatch);
-            colorSwatch.Top = colorButton.Top; colorSwatch.Left = 232;
 
             tileXBox = Tb(); tileXBox.TextChanged += (s, e) => Commit(); Row("Tiling X", tileXBox);
             tileYBox = Tb(); tileYBox.TextChanged += (s, e) => Commit(); Row("Tiling Y", tileYBox);

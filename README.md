@@ -33,9 +33,11 @@ It does two things:
   with your material applied, plus a fixed reference thumbnail of the face/chest look (that
   part isn't something this tool edits, and the separate face/chest meshes don't carry enough
   transform data outside Unity to be composited into the 3D view accurately, so it's shown
-  flat instead of risking a visibly-misplaced 3D decal). **Requires a local, one-time setup
-  step** -- see "3D preview meshes" below; without it this tab shows a message instead of a
-  model.
+  flat instead of risking a visibly-misplaced 3D decal). The rasterizer doesn't backface-cull
+  (the ripped mesh's submeshes don't all share one consistent winding order, which used to
+  show the inside of some parts) -- it relies on the Z-buffer alone, which is correct
+  regardless of winding for a closed mesh. **Requires a local, one-time setup step** -- see "3D
+  preview meshes" below; without it this tab shows a message instead of a model.
 - **Export .gmatplus** -- if there's no main texture, you'll get a warning first: shipping a
   textureless material renders as a plain white skin in-game (Unity's fallback for a missing
   texture), so this is your chance to notice before sharing a broken file.

@@ -77,9 +77,14 @@ namespace GmatConverter
                 float sx1 = width / 2f + v1.X * focal / z1, sy1 = height / 2f - v1.Y * focal / z1;
                 float sx2 = width / 2f + v2.X * focal / z2, sy2 = height / 2f - v2.Y * focal / z2;
 
-                // Backface cull (screen-space winding).
+                // No backface culling: the ripped mesh's submeshes don't all share one
+                // consistent winding order, so a single cull-sign convention was showing the
+                // inside of some parts and the outside of others. The barycentric weights
+                // below are self-consistent for either winding, and the Z-buffer alone
+                // correctly resolves which surface is actually closest to the camera -- for a
+                // closed mesh that's always the true outer surface, regardless of winding.
                 float area = (sx1 - sx0) * (sy2 - sy0) - (sx2 - sx0) * (sy1 - sy0);
-                if (area >= 0) continue;
+                if (Math.Abs(area) < 0.0001f) continue;
 
                 Vector3 n0 = Vector3.TransformNormal(mesh.Normals[i0], rotation);
                 Vector3 n1 = Vector3.TransformNormal(mesh.Normals[i1], rotation);
@@ -146,10 +151,14 @@ namespace GmatConverter
 
         private static float Shade(Vector3 normal)
         {
+            // Abs(), not Max(0, .)): now that backfaces are rasterized too (no culling), a
+            // triangle whose normal points away from the light should still shade like a solid
+            // surface would from that side, not go dark -- otherwise any spot where a backface
+            // wins the depth test (open/non-manifold edges in the ripped mesh) reads as a hole.
             float d = Vector3.Dot(Vector3.Normalize(normal), LightDir);
             // Generous ambient floor -- this is a shape/color preview, not a lighting demo, so
             // it should never read as "solid black" no matter which way it's rotated.
-            return 0.45f + 0.55f * Math.Max(0f, d);
+            return 0.45f + 0.55f * Math.Abs(d);
         }
 
         private static float Wrap01(float x)
